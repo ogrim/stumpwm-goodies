@@ -1,6 +1,7 @@
 (in-package :stumpwm)
 
-(load "/home/joel/repository/stumpwm-goodies/mode-line/modeline-cpu.lisp")
+(load "/home/ogrim/sites/stumpwm-goodies/mode-line/modeline-cpu.lisp")
+;(load "modeline-cpu.lisp")
 ;(load (concat *stumpwm-load-path* "notifications.lisp"))
 
 (setf *mode-line-screen-position* :bottom)
@@ -16,12 +17,16 @@
 (setf *window-format* "<%n%s%m%30t>")
 
 (defun show-ip-address ()
-  (let ((ip (run-shell-command "ifconfig eth1 | grep 'inet addr:' | cut -d: -f2 | awk '{ print $1}'" t)))
-    (substitute #\Space #\Newline ip)))
+  (let ((ip (run-shell-command "ip addr | grep eth0 | grep inet | cut -d' ' -f6" t)))
+	(substitute #\Space #\Newline ip)))
 
 (defun show-battery-charge ()
   (let ((raw-battery (run-shell-command "acpi | cut -d, -f2" t)))
     (substitute #\Space #\Newline raw-battery)))
+
+(defun show-battery-remaining ()
+  (let ((remaining (run-shell-command "acpi | awk '{ print $5 }'" t)))
+    (substitute #\Space #\Newline remaining)))
 
 (defun show-hostname ()
   (let ((host-name (run-shell-command "cat /etc/hostname" t)))
@@ -49,6 +54,10 @@
                (run-shell-command "touch /home/joel/emacs-jabber-mail.temp" t)))
     ""))
 
+(defun show-time-date ()
+  (let ((time (run-shell-command "ruby -e \"print Time.now\"" t)))
+    (substitute #\Space #\Newline time)))
+
 ;; Switch mode-line on
 (toggle-mode-line (current-screen) (current-head))
 
@@ -58,10 +67,13 @@
 ;; Set model-line format
 (setf *screen-mode-line-format*
       (list
+       " "
+       '(:eval (show-time-date))
+       " | "
        '(:eval (show-hostname))
        "| Battery:"
        '(:eval (show-battery-charge))
        '(:eval (show-battery-state))
+       '(:eval (show-battery-remaining))
        "| IP " '(:eval (show-ip-address))
-       "| " '(:eval (run-shell-command "ruby -e \"print Time.now\"" t))
        "| %g"))
